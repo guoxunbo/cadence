@@ -22,6 +22,7 @@ package matching
 
 import (
 	"context"
+	"github.com/uber/cadence/common/log/loggerimpl"
 	"math/rand"
 	"testing"
 	"time"
@@ -220,7 +221,7 @@ func (t *MatcherTestSuite) TestQueryLocalSyncMatch() {
 	time.Sleep(10 * time.Millisecond)
 	task := newInternalQueryTask(uuid.New(), &gen.QueryWorkflowRequest{})
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	resp, err := t.matcher.OfferQuery(ctx, task)
+	resp, err := t.matcher.OfferQuery(ctx, task, loggerimpl.NewNopLogger())
 	cancel()
 	t.NoError(err)
 	t.Nil(resp)
@@ -265,11 +266,11 @@ func (t *MatcherTestSuite) TestQueryRemoteSyncMatch() {
 			task.forwardedFrom = req.GetForwardedFrom()
 			close(pollSigC)
 			time.Sleep(10 * time.Millisecond)
-			t.rootMatcher.OfferQuery(ctx, task)
+			t.rootMatcher.OfferQuery(ctx, task, loggerimpl.NewNopLogger())
 		},
 	).Return(&shared.QueryWorkflowResponse{QueryResult: []byte("answer")}, nil)
 
-	result, err := t.matcher.OfferQuery(ctx, task)
+	result, err := t.matcher.OfferQuery(ctx, task, loggerimpl.NewNopLogger())
 	cancel()
 	t.NotNil(req)
 	t.NoError(err)
@@ -309,7 +310,7 @@ func (t *MatcherTestSuite) TestQueryRemoteSyncMatchError() {
 		},
 	).Return(nil, errMatchingHostThrottle)
 
-	result, err := t.matcher.OfferQuery(ctx, task)
+	result, err := t.matcher.OfferQuery(ctx, task, loggerimpl.NewNopLogger())
 	cancel()
 	t.NotNil(req)
 	t.NoError(err)

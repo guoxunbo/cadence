@@ -22,6 +22,8 @@ package matching
 
 import (
 	"context"
+	"github.com/uber/cadence/common/log/tag"
+	"strings"
 	"sync"
 	"time"
 
@@ -263,6 +265,14 @@ func (h *Handler) QueryWorkflow(
 	ctx context.Context,
 	request *m.QueryWorkflowRequest,
 ) (resp *gen.QueryWorkflowResponse, retError error) {
+	if strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		h.GetLogger().Info("handler.QueryWorkflow got query for type andrew_test_123",
+			tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
+			tag.WorkflowTaskListName(request.GetTaskList().GetName()),
+			tag.WorkflowDomainName(request.GetQueryRequest().GetDomain()),
+			tag.WorkflowQueryType(request.GetQueryRequest().GetQuery().GetQueryType()),
+			tag.Timestamp(time.Now()))
+	}
 	defer log.CapturePanic(h.GetLogger(), &retError)
 	hCtx := h.newHandlerContext(
 		ctx,
@@ -276,13 +286,52 @@ func (h *Handler) QueryWorkflow(
 
 	if request.GetForwardedFrom() != "" {
 		hCtx.scope.IncCounter(metrics.ForwardedPerTaskListCounter)
+
+		if strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+			h.GetLogger().Info("handler.QueryWorkflow non-empty forwarded from",
+				tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
+				tag.WorkflowTaskListName(request.GetTaskList().GetName()),
+				tag.WorkflowDomainName(request.GetQueryRequest().GetDomain()),
+				tag.WorkflowQueryType(request.GetQueryRequest().GetQuery().GetQueryType()),
+				tag.Timestamp(time.Now()))
+		}
 	}
 
 	if ok := h.rateLimiter.Allow(); !ok {
+
+		if strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+			h.GetLogger().Info("handler.QueryWorkflow handler rate limiter not allowed",
+				tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
+				tag.WorkflowTaskListName(request.GetTaskList().GetName()),
+				tag.WorkflowDomainName(request.GetQueryRequest().GetDomain()),
+				tag.WorkflowQueryType(request.GetQueryRequest().GetQuery().GetQueryType()),
+				tag.Timestamp(time.Now()))
+		}
+
 		return nil, hCtx.handleErr(errMatchingHostThrottle)
 	}
 
+	if strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		h.GetLogger().Info("handler.QueryWorkflow handler rate limiter allowed",
+			tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
+			tag.WorkflowTaskListName(request.GetTaskList().GetName()),
+			tag.WorkflowDomainName(request.GetQueryRequest().GetDomain()),
+			tag.WorkflowQueryType(request.GetQueryRequest().GetQuery().GetQueryType()),
+			tag.Timestamp(time.Now()))
+	}
+
 	response, err := h.engine.QueryWorkflow(hCtx, request)
+
+	if strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		h.GetLogger().Info("handler.QueryWorkflow got result",
+			tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
+			tag.WorkflowTaskListName(request.GetTaskList().GetName()),
+			tag.WorkflowDomainName(request.GetQueryRequest().GetDomain()),
+			tag.WorkflowQueryType(request.GetQueryRequest().GetQuery().GetQueryType()),
+			tag.Timestamp(time.Now()),
+			tag.Error(err))
+	}
+
 	return response, hCtx.handleErr(err)
 }
 

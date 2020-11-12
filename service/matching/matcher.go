@@ -23,6 +23,9 @@ package matching
 import (
 	"context"
 	"errors"
+	"github.com/uber/cadence/common/log"
+	"github.com/uber/cadence/common/log/tag"
+	"strings"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -174,9 +177,32 @@ func (tm *TaskMatcher) offerOrTimeout(ctx context.Context, task *internalTask) (
 // OfferQuery will either match task to local poller or will forward query task.
 // Local match is always attempted before forwarding is attempted. If local match occurs
 // response and error are both nil, if forwarding occurs then response or error is returned.
-func (tm *TaskMatcher) OfferQuery(ctx context.Context, task *internalTask) (*shared.QueryWorkflowResponse, error) {
+func (tm *TaskMatcher) OfferQuery(ctx context.Context, task *internalTask, logger log.Logger) (*shared.QueryWorkflowResponse, error) {
+
+
+	if task.isQuery() && strings.HasPrefix(task.query.request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		request := task.query.request
+		logger.Info("matcher.OfferQuery started",
+			tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
+			tag.WorkflowTaskListName(request.GetTaskList().GetName()),
+			tag.WorkflowDomainName(request.GetQueryRequest().GetDomain()),
+			tag.WorkflowQueryType(request.GetQueryRequest().GetQuery().GetQueryType()),
+			tag.Timestamp(time.Now()))
+	}
+
+
+
 	select {
 	case tm.queryTaskC <- task:
+		if task.isQuery() && strings.HasPrefix(task.query.request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+			request := task.query.request
+			logger.Info("matcher.OfferQuery got sync match locally",
+				tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
+				tag.WorkflowTaskListName(request.GetTaskList().GetName()),
+				tag.WorkflowDomainName(request.GetQueryRequest().GetDomain()),
+				tag.WorkflowQueryType(request.GetQueryRequest().GetQuery().GetQueryType()),
+				tag.Timestamp(time.Now()))
+		}
 		<-task.responseC
 		return nil, nil
 	default:
@@ -187,9 +213,13 @@ func (tm *TaskMatcher) OfferQuery(ctx context.Context, task *internalTask) (*sha
 	for {
 		select {
 		case tm.queryTaskC <- task:
+
+			// this represents a local match of query task
 			<-task.responseC
 			return nil, nil
 		case token := <-fwdrTokenC:
+
+			// this represents a remote match
 			resp, err := tm.fwdr.ForwardQueryTask(ctx, task)
 			token.release()
 			if err == nil {

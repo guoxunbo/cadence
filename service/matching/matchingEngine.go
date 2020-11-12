@@ -26,6 +26,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	"sync"
 	"time"
 
@@ -462,6 +463,16 @@ func (e *matchingEngineImpl) QueryWorkflow(
 	hCtx *handlerContext,
 	queryRequest *m.QueryWorkflowRequest,
 ) (*workflow.QueryWorkflowResponse, error) {
+
+	if strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		e.logger.Info("matchingEngine.QueryWorkflow started",
+			tag.WorkflowTaskListType(int(queryRequest.GetTaskList().GetKind())),
+			tag.WorkflowTaskListName(queryRequest.GetTaskList().GetName()),
+			tag.WorkflowDomainName(queryRequest.GetQueryRequest().GetDomain()),
+			tag.WorkflowQueryType(queryRequest.GetQueryRequest().GetQuery().GetQueryType()),
+			tag.Timestamp(time.Now()))
+	}
+
 	domainID := queryRequest.GetDomainUUID()
 	taskListName := queryRequest.TaskList.GetName()
 	taskListKind := common.TaskListKindPtr(queryRequest.TaskList.GetKind())
@@ -472,15 +483,58 @@ func (e *matchingEngineImpl) QueryWorkflow(
 
 	tlMgr, err := e.getTaskListManager(taskList, taskListKind)
 	if err != nil {
+
+		if strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+			e.logger.Info("matchingEngine.QueryWorkflow error getting task list manager",
+				tag.WorkflowTaskListType(int(queryRequest.GetTaskList().GetKind())),
+				tag.WorkflowTaskListName(queryRequest.GetTaskList().GetName()),
+				tag.WorkflowDomainName(queryRequest.GetQueryRequest().GetDomain()),
+				tag.WorkflowQueryType(queryRequest.GetQueryRequest().GetQuery().GetQueryType()),
+				tag.Timestamp(time.Now()),
+				tag.Error(err))
+		}
+
 		return nil, err
 	}
+
+
+	if strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		e.logger.Info("matchingEngine.QueryWorkflow got task list manager",
+			tag.WorkflowTaskListType(int(queryRequest.GetTaskList().GetKind())),
+			tag.WorkflowTaskListName(queryRequest.GetTaskList().GetName()),
+			tag.WorkflowDomainName(queryRequest.GetQueryRequest().GetDomain()),
+			tag.WorkflowQueryType(queryRequest.GetQueryRequest().GetQuery().GetQueryType()),
+			tag.Timestamp(time.Now()))
+	}
+
 	taskID := uuid.New()
 	resp, err := tlMgr.DispatchQueryTask(hCtx.Context, taskID, queryRequest)
 
 	// if get response or error it means that query task was handled by forwarding to another matching host
 	// this remote host's result can be returned directly
 	if resp != nil || err != nil {
+
+		if strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+			e.logger.Info("matchingEngine.QueryWorkflow query handled not locally",
+				tag.WorkflowTaskListType(int(queryRequest.GetTaskList().GetKind())),
+				tag.WorkflowTaskListName(queryRequest.GetTaskList().GetName()),
+				tag.WorkflowDomainName(queryRequest.GetQueryRequest().GetDomain()),
+				tag.WorkflowQueryType(queryRequest.GetQueryRequest().GetQuery().GetQueryType()),
+				tag.Timestamp(time.Now()),
+				tag.Error(err))
+		}
+
 		return resp, err
+	}
+
+
+	if strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		e.logger.Info("matchingEngine.QueryWorkflow handling locally",
+			tag.WorkflowTaskListType(int(queryRequest.GetTaskList().GetKind())),
+			tag.WorkflowTaskListName(queryRequest.GetTaskList().GetName()),
+			tag.WorkflowDomainName(queryRequest.GetQueryRequest().GetDomain()),
+			tag.WorkflowQueryType(queryRequest.GetQueryRequest().GetQuery().GetQueryType()),
+			tag.Timestamp(time.Now()))
 	}
 
 	// if get here it means that dispatch of query task has occurred locally
@@ -489,8 +543,26 @@ func (e *matchingEngineImpl) QueryWorkflow(
 	e.lockableQueryTaskMap.put(taskID, queryResultCh)
 	defer e.lockableQueryTaskMap.delete(taskID)
 
+	if strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		e.logger.Info("matchingEngine.QueryWorkflow put in map successfully",
+			tag.WorkflowTaskListType(int(queryRequest.GetTaskList().GetKind())),
+			tag.WorkflowTaskListName(queryRequest.GetTaskList().GetName()),
+			tag.WorkflowDomainName(queryRequest.GetQueryRequest().GetDomain()),
+			tag.WorkflowQueryType(queryRequest.GetQueryRequest().GetQuery().GetQueryType()),
+			tag.Timestamp(time.Now()))
+	}
+
 	select {
 	case result := <-queryResultCh:
+		if strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+			e.logger.Info("matchingEngine.QueryWorkflow got result",
+				tag.WorkflowTaskListType(int(queryRequest.GetTaskList().GetKind())),
+				tag.WorkflowTaskListName(queryRequest.GetTaskList().GetName()),
+				tag.WorkflowDomainName(queryRequest.GetQueryRequest().GetDomain()),
+				tag.WorkflowQueryType(queryRequest.GetQueryRequest().GetQuery().GetQueryType()),
+				tag.Timestamp(time.Now()))
+		}
+
 		if result.internalError != nil {
 			return nil, result.internalError
 		}

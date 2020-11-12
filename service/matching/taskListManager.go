@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -260,9 +261,29 @@ func (c *taskListManagerImpl) DispatchQueryTask(
 	taskID string,
 	request *matching.QueryWorkflowRequest,
 ) (*s.QueryWorkflowResponse, error) {
+
+	if strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		c.logger.Info("taskListManager.DispatchQueryTask started",
+			tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
+			tag.WorkflowTaskListName(request.GetTaskList().GetName()),
+			tag.WorkflowDomainName(request.GetQueryRequest().GetDomain()),
+			tag.WorkflowQueryType(request.GetQueryRequest().GetQuery().GetQueryType()),
+			tag.Timestamp(time.Now()))
+	}
+
 	c.startWG.Wait()
+
+	if strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		c.logger.Info("taskListManager.DispatchQueryTask got past wait",
+			tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
+			tag.WorkflowTaskListName(request.GetTaskList().GetName()),
+			tag.WorkflowDomainName(request.GetQueryRequest().GetDomain()),
+			tag.WorkflowQueryType(request.GetQueryRequest().GetQuery().GetQueryType()),
+			tag.Timestamp(time.Now()))
+	}
+
 	task := newInternalQueryTask(taskID, request)
-	return c.matcher.OfferQuery(ctx, task)
+	return c.matcher.OfferQuery(ctx, task, c.logger)
 }
 
 // GetTask blocks waiting for a task.
