@@ -337,6 +337,22 @@ pollLoop:
 		}
 
 		if task.isQuery() {
+
+
+			if task.query != nil &&
+				task.query.request != nil &&
+				task.query.request.GetQueryRequest() != nil &&
+				task.query.request.GetQueryRequest().GetQuery() != nil &&
+				strings.HasPrefix(task.query.request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+				request := task.query.request
+				e.logger.Info("matchingEngine.PollForDecisionTask got query task",
+					tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
+					tag.WorkflowTaskListName(request.GetTaskList().GetName()),
+					tag.WorkflowDomainName(request.GetQueryRequest().GetDomain()),
+					tag.WorkflowQueryType(request.GetQueryRequest().GetQuery().GetQueryType()),
+					tag.Timestamp(time.Now()))
+			}
+
 			task.finish(nil) // this only means query task sync match succeed.
 
 			// for query task, we don't need to update history to record decision task started. but we need to know
@@ -356,6 +372,22 @@ pollLoop:
 			if len(mutableStateResp.StickyTaskList.GetName()) != 0 && supportsSticky {
 				isStickyEnabled = true
 			}
+
+			if task.query != nil &&
+				task.query.request != nil &&
+				task.query.request.GetQueryRequest() != nil &&
+				task.query.request.GetQueryRequest().GetQuery() != nil &&
+				strings.HasPrefix(task.query.request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+				request := task.query.request
+				e.logger.Info("matchingEngine.PollForDecisionTask about to create response",
+					tag.WorkflowTaskListType(int(mutableStateResp.TaskList.GetKind())),
+					tag.WorkflowTaskListName(mutableStateResp.TaskList.GetName()),
+					tag.WorkflowDomainName(request.GetQueryRequest().GetDomain()),
+					tag.WorkflowQueryType(request.GetQueryRequest().GetQuery().GetQueryType()),
+					tag.Timestamp(time.Now()),
+					tag.Bool(isStickyEnabled))
+			}
+
 			resp := &h.RecordDecisionTaskStartedResponse{
 				PreviousStartedEventId:    mutableStateResp.PreviousStartedEventId,
 				NextEventId:               mutableStateResp.NextEventId,
@@ -464,7 +496,9 @@ func (e *matchingEngineImpl) QueryWorkflow(
 	queryRequest *m.QueryWorkflowRequest,
 ) (*workflow.QueryWorkflowResponse, error) {
 
-	if strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+	if queryRequest.GetQueryRequest() != nil &&
+		queryRequest.GetQueryRequest().GetQuery() != nil &&
+		strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
 		e.logger.Info("matchingEngine.QueryWorkflow started",
 			tag.WorkflowTaskListType(int(queryRequest.GetTaskList().GetKind())),
 			tag.WorkflowTaskListName(queryRequest.GetTaskList().GetName()),
@@ -484,7 +518,9 @@ func (e *matchingEngineImpl) QueryWorkflow(
 	tlMgr, err := e.getTaskListManager(taskList, taskListKind)
 	if err != nil {
 
-		if strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		if queryRequest.GetQueryRequest() != nil &&
+			queryRequest.GetQueryRequest().GetQuery() != nil &&
+			strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
 			e.logger.Info("matchingEngine.QueryWorkflow error getting task list manager",
 				tag.WorkflowTaskListType(int(queryRequest.GetTaskList().GetKind())),
 				tag.WorkflowTaskListName(queryRequest.GetTaskList().GetName()),
@@ -498,7 +534,9 @@ func (e *matchingEngineImpl) QueryWorkflow(
 	}
 
 
-	if strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+	if queryRequest.GetQueryRequest() != nil &&
+		queryRequest.GetQueryRequest().GetQuery() != nil &&
+		strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
 		e.logger.Info("matchingEngine.QueryWorkflow got task list manager",
 			tag.WorkflowTaskListType(int(queryRequest.GetTaskList().GetKind())),
 			tag.WorkflowTaskListName(queryRequest.GetTaskList().GetName()),
@@ -514,7 +552,9 @@ func (e *matchingEngineImpl) QueryWorkflow(
 	// this remote host's result can be returned directly
 	if resp != nil || err != nil {
 
-		if strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		if queryRequest.GetQueryRequest() != nil &&
+			queryRequest.GetQueryRequest().GetQuery() != nil &&
+			strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
 			e.logger.Info("matchingEngine.QueryWorkflow query handled not locally",
 				tag.WorkflowTaskListType(int(queryRequest.GetTaskList().GetKind())),
 				tag.WorkflowTaskListName(queryRequest.GetTaskList().GetName()),
@@ -528,8 +568,10 @@ func (e *matchingEngineImpl) QueryWorkflow(
 	}
 
 
-	if strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
-		e.logger.Info("matchingEngine.QueryWorkflow handling locally",
+	if queryRequest.GetQueryRequest() != nil &&
+		queryRequest.GetQueryRequest().GetQuery() != nil &&
+		strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		e.logger.Info("matchingEngine.QueryWorkflow being handling locally",
 			tag.WorkflowTaskListType(int(queryRequest.GetTaskList().GetKind())),
 			tag.WorkflowTaskListName(queryRequest.GetTaskList().GetName()),
 			tag.WorkflowDomainName(queryRequest.GetQueryRequest().GetDomain()),
@@ -543,7 +585,9 @@ func (e *matchingEngineImpl) QueryWorkflow(
 	e.lockableQueryTaskMap.put(taskID, queryResultCh)
 	defer e.lockableQueryTaskMap.delete(taskID)
 
-	if strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+	if queryRequest.GetQueryRequest() != nil &&
+		queryRequest.GetQueryRequest().GetQuery() != nil &&
+		strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
 		e.logger.Info("matchingEngine.QueryWorkflow put in map successfully",
 			tag.WorkflowTaskListType(int(queryRequest.GetTaskList().GetKind())),
 			tag.WorkflowTaskListName(queryRequest.GetTaskList().GetName()),
@@ -554,7 +598,9 @@ func (e *matchingEngineImpl) QueryWorkflow(
 
 	select {
 	case result := <-queryResultCh:
-		if strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		if queryRequest.GetQueryRequest() != nil &&
+			queryRequest.GetQueryRequest().GetQuery() != nil &&
+			strings.HasPrefix(queryRequest.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
 			e.logger.Info("matchingEngine.QueryWorkflow got result",
 				tag.WorkflowTaskListType(int(queryRequest.GetTaskList().GetKind())),
 				tag.WorkflowTaskListName(queryRequest.GetTaskList().GetName()),

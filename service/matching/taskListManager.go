@@ -262,7 +262,9 @@ func (c *taskListManagerImpl) DispatchQueryTask(
 	request *matching.QueryWorkflowRequest,
 ) (*s.QueryWorkflowResponse, error) {
 
-	if strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+	if request.GetQueryRequest() != nil &&
+		request.GetQueryRequest().GetQuery() != nil &&
+		strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
 		c.logger.Info("taskListManager.DispatchQueryTask started",
 			tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
 			tag.WorkflowTaskListName(request.GetTaskList().GetName()),
@@ -273,7 +275,9 @@ func (c *taskListManagerImpl) DispatchQueryTask(
 
 	c.startWG.Wait()
 
-	if strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+	if request.GetQueryRequest() != nil &&
+		request.GetQueryRequest().GetQuery() != nil &&
+		strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
 		c.logger.Info("taskListManager.DispatchQueryTask got past wait",
 			tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
 			tag.WorkflowTaskListName(request.GetTaskList().GetName()),

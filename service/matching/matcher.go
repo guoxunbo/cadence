@@ -180,7 +180,11 @@ func (tm *TaskMatcher) offerOrTimeout(ctx context.Context, task *internalTask) (
 func (tm *TaskMatcher) OfferQuery(ctx context.Context, task *internalTask, logger log.Logger) (*shared.QueryWorkflowResponse, error) {
 
 
-	if task.isQuery() && strings.HasPrefix(task.query.request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+	if task.isQuery() &&
+		task.query.request != nil &&
+		task.query.request.GetQueryRequest() != nil &&
+		task.query.request.GetQueryRequest().GetQuery() != nil &&
+		strings.HasPrefix(task.query.request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
 		request := task.query.request
 		logger.Info("matcher.OfferQuery started",
 			tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
@@ -194,7 +198,11 @@ func (tm *TaskMatcher) OfferQuery(ctx context.Context, task *internalTask, logge
 
 	select {
 	case tm.queryTaskC <- task:
-		if task.isQuery() && strings.HasPrefix(task.query.request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		if task.isQuery() &&
+			task.query.request != nil &&
+			task.query.request.GetQueryRequest() != nil &&
+			task.query.request.GetQueryRequest().GetQuery() != nil &&
+			strings.HasPrefix(task.query.request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
 			request := task.query.request
 			logger.Info("matcher.OfferQuery got sync match locally",
 				tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
@@ -215,17 +223,75 @@ func (tm *TaskMatcher) OfferQuery(ctx context.Context, task *internalTask, logge
 		case tm.queryTaskC <- task:
 
 			// this represents a local match of query task
+
+			if task.isQuery() &&
+				task.query.request != nil &&
+				task.query.request.GetQueryRequest() != nil &&
+				task.query.request.GetQueryRequest().GetQuery() != nil &&
+				strings.HasPrefix(task.query.request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+				request := task.query.request
+				logger.Info("matcher.OfferQuery got sync match locally but after some more waiting",
+					tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
+					tag.WorkflowTaskListName(request.GetTaskList().GetName()),
+					tag.WorkflowDomainName(request.GetQueryRequest().GetDomain()),
+					tag.WorkflowQueryType(request.GetQueryRequest().GetQuery().GetQueryType()),
+					tag.Timestamp(time.Now()))
+			}
 			<-task.responseC
 			return nil, nil
 		case token := <-fwdrTokenC:
+
+			if task.isQuery() &&
+				task.query.request != nil &&
+				task.query.request.GetQueryRequest() != nil &&
+				task.query.request.GetQueryRequest().GetQuery() != nil &&
+				strings.HasPrefix(task.query.request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+				request := task.query.request
+				logger.Info("matcher.OfferQuery got token for remote match",
+					tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
+					tag.WorkflowTaskListName(request.GetTaskList().GetName()),
+					tag.WorkflowDomainName(request.GetQueryRequest().GetDomain()),
+					tag.WorkflowQueryType(request.GetQueryRequest().GetQuery().GetQueryType()),
+					tag.Timestamp(time.Now()))
+			}
 
 			// this represents a remote match
 			resp, err := tm.fwdr.ForwardQueryTask(ctx, task)
 			token.release()
 			if err == nil {
+
+				if task.isQuery() &&
+					task.query.request != nil &&
+					task.query.request.GetQueryRequest() != nil &&
+					task.query.request.GetQueryRequest().GetQuery() != nil &&
+					strings.HasPrefix(task.query.request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+					request := task.query.request
+					logger.Info("matcher.OfferQuery successfully got response from remote",
+						tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
+						tag.WorkflowTaskListName(request.GetTaskList().GetName()),
+						tag.WorkflowDomainName(request.GetQueryRequest().GetDomain()),
+						tag.WorkflowQueryType(request.GetQueryRequest().GetQuery().GetQueryType()),
+						tag.Timestamp(time.Now()))
+				}
+
 				return resp, nil
 			}
 			if err == errForwarderSlowDown {
+
+				if task.isQuery() &&
+					task.query.request != nil &&
+					task.query.request.GetQueryRequest() != nil &&
+					task.query.request.GetQueryRequest().GetQuery() != nil &&
+					strings.HasPrefix(task.query.request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+					request := task.query.request
+					logger.Info("matcher.OfferQuery got slow down error",
+						tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
+						tag.WorkflowTaskListName(request.GetTaskList().GetName()),
+						tag.WorkflowDomainName(request.GetQueryRequest().GetDomain()),
+						tag.WorkflowQueryType(request.GetQueryRequest().GetQuery().GetQueryType()),
+						tag.Timestamp(time.Now()))
+				}
+
 				// if we are rate limited, try only local match for the
 				// remainder of the context timeout left
 				fwdrTokenC = noopForwarderTokenC

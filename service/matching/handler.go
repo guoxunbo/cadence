@@ -265,8 +265,10 @@ func (h *Handler) QueryWorkflow(
 	ctx context.Context,
 	request *m.QueryWorkflowRequest,
 ) (resp *gen.QueryWorkflowResponse, retError error) {
-	if strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
-		h.GetLogger().Info("handler.QueryWorkflow got query for type andrew_test_123",
+	if request.GetQueryRequest() != nil &&
+		request.GetQueryRequest().GetQuery() != nil &&
+		strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		h.GetLogger().Info("handler.QueryWorkflow started",
 			tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
 			tag.WorkflowTaskListName(request.GetTaskList().GetName()),
 			tag.WorkflowDomainName(request.GetQueryRequest().GetDomain()),
@@ -287,7 +289,9 @@ func (h *Handler) QueryWorkflow(
 	if request.GetForwardedFrom() != "" {
 		hCtx.scope.IncCounter(metrics.ForwardedPerTaskListCounter)
 
-		if strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		if request.GetQueryRequest() != nil &&
+			request.GetQueryRequest().GetQuery() != nil &&
+			strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
 			h.GetLogger().Info("handler.QueryWorkflow non-empty forwarded from",
 				tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
 				tag.WorkflowTaskListName(request.GetTaskList().GetName()),
@@ -299,7 +303,9 @@ func (h *Handler) QueryWorkflow(
 
 	if ok := h.rateLimiter.Allow(); !ok {
 
-		if strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+		if request.GetQueryRequest() != nil &&
+			request.GetQueryRequest().GetQuery() != nil &&
+			strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
 			h.GetLogger().Info("handler.QueryWorkflow handler rate limiter not allowed",
 				tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
 				tag.WorkflowTaskListName(request.GetTaskList().GetName()),
@@ -311,7 +317,9 @@ func (h *Handler) QueryWorkflow(
 		return nil, hCtx.handleErr(errMatchingHostThrottle)
 	}
 
-	if strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+	if request.GetQueryRequest() != nil &&
+		request.GetQueryRequest().GetQuery() != nil &&
+		strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
 		h.GetLogger().Info("handler.QueryWorkflow handler rate limiter allowed",
 			tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
 			tag.WorkflowTaskListName(request.GetTaskList().GetName()),
@@ -322,7 +330,9 @@ func (h *Handler) QueryWorkflow(
 
 	response, err := h.engine.QueryWorkflow(hCtx, request)
 
-	if strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
+	if request.GetQueryRequest() != nil &&
+		request.GetQueryRequest().GetQuery() != nil &&
+		strings.HasPrefix(request.GetQueryRequest().GetQuery().GetQueryType(), "andrew_test_") {
 		h.GetLogger().Info("handler.QueryWorkflow got result",
 			tag.WorkflowTaskListType(int(request.GetTaskList().GetKind())),
 			tag.WorkflowTaskListName(request.GetTaskList().GetName()),
